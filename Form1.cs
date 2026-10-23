@@ -52,6 +52,8 @@ namespace WinFormsApp1
         // ==========================================
         private List<SpaceModel> _spaces = new List<SpaceModel>();
         private List<ReservationModel> _reservations = new List<ReservationModel>();
+        private int _totalReservationCount;
+        private Label _lblActiveReservationCount;
         private SpaceModel _selectedSpace = null;
         private List<int> _selectedHours = new List<int>();
         private bool _isDarkMode = false;
@@ -109,7 +111,7 @@ namespace WinFormsApp1
 
         public Form1()
         {
-            this.Text = "SPACE HUB | 프리미엄 공간 대여 플랫폼";
+            this.Text = "SPACE HUB | 공유 공간 예약";
             this.Size = new Size(1360, 880);
             this.MinimumSize = new Size(1200, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -131,10 +133,10 @@ namespace WinFormsApp1
         {
             _spaces = new List<SpaceModel>
             {
-                new SpaceModel { Id = 1, Category = "Office", CategoryName = "🏢 공유오피스", Title = "강남 루프탑 프라이빗 오피스", Description = "도심 전경이 한눈에 보이는 최상층 독립형 업무 공간입니다.", Amenities = "WiFi · 모니터 · 비버리지바", Capacity = 4, PricePerHour = 15000, Rating = 4.8, ReservedHours = new List<int>{ 10, 11, 14 } },
+                new SpaceModel { Id = 1, Category = "Office", CategoryName = "🏢 공유 오피스", Title = "강남 루프탑 프라이빗 오피스", Description = "도심 전경이 한눈에 보이는 최상층 독립형 업무 공간입니다.", Amenities = "WiFi · 모니터 · 비버리지바", Capacity = 4, PricePerHour = 15000, Rating = 4.8, ReservedHours = new List<int>{ 10, 11, 14 } },
                 new SpaceModel { Id = 2, Category = "Meeting", CategoryName = "🤝 회의실", Title = "성수 디자이너 콘셉트 미팅룸", Description = "초고속 와이파이와 4K 스크린이 구비된 메인 회의실입니다.", Amenities = "4K beam · 화이트보드 · 음료", Capacity = 8, PricePerHour = 25000, Rating = 4.9, ReservedHours = new List<int>{ 13, 15, 16 } },
-                new SpaceModel { Id = 3, Category = "Kitchen", CategoryName = "🍳 공유주방", Title = "홍대 쿠킹 스튜디오 파티룸", Description = "최신 인덕션 및 오븐 시설이 완비된 다목적 주방입니다.", Amenities = "오븐 · 정수기 · 촬영조명", Capacity = 6, PricePerHour = 30000, Rating = 4.7, ReservedHours = new List<int>{ 18, 19 } },
-                new SpaceModel { Id = 4, Category = "Office", CategoryName = "🏢 공유오피스", Title = "판교 테크노 1인 포커스 룸", Description = "조용하게 집중할 수 있는 1인 전용 몰입형 공유 오피스.", Amenities = "모션데스크 · 시디즈의자", Capacity = 1, PricePerHour = 8000, Rating = 4.6, ReservedHours = new List<int>{ 9, 10 } },
+                new SpaceModel { Id = 3, Category = "Kitchen", CategoryName = "🍳 공유 주방", Title = "홍대 쿠킹 스튜디오 파티룸", Description = "최신 인덕션 및 오븐 시설이 완비된 다목적 주방입니다.", Amenities = "오븐 · 정수기 · 촬영조명", Capacity = 6, PricePerHour = 30000, Rating = 4.7, ReservedHours = new List<int>{ 18, 19 } },
+                new SpaceModel { Id = 4, Category = "Office", CategoryName = "🏢 공유 오피스", Title = "판교 테크노 1인 포커스 룸", Description = "조용하게 집중할 수 있는 1인 전용 몰입형 공유 오피스.", Amenities = "모션데스크 · 시디즈의자", Capacity = 1, PricePerHour = 8000, Rating = 4.6, ReservedHours = new List<int>{ 9, 10 } },
                 new SpaceModel { Id = 5, Category = "Meeting", CategoryName = "🤝 회의실", Title = "여의도 프리미엄 임원 이사회실", Description = "중요한 비즈니스 미팅과 세미나에 최적화된 고급 회의실.", Amenities = "화상회의설비 · 케이터링", Capacity = 12, PricePerHour = 45000, Rating = 5.0, ReservedHours = new List<int>{ 11, 12, 13 } }
             };
 
@@ -156,7 +158,7 @@ namespace WinFormsApp1
             // 상단 수치 요약 위젯
             Panel statsPanel = BuildStatsWidget();
             statsPanel.Dock = DockStyle.Top;
-            statsPanel.Height = 110;
+            statsPanel.Height = 190;
 
             // 중앙 작업 영역
             Panel centerContainer = new Panel { Dock = DockStyle.Fill };
@@ -214,7 +216,7 @@ namespace WinFormsApp1
                 Padding = new Padding(0, 10, 0, 0)
             };
 
-            Button btnNavReserve = CreateSidebarBtn("🔍   공간 탐색 및 대여");
+            Button btnNavReserve = CreateSidebarBtn("🔍   공유 공간 탐색 및 예약");
             btnNavReserve.Click += (s, e) => SwitchNav(true);
 
             Button btnNavHistory = CreateSidebarBtn("📋   내 예약 관리 내역");
@@ -292,26 +294,73 @@ namespace WinFormsApp1
 
         private Panel BuildStatsWidget()
         {
-            TableLayoutPanel tlp = new TableLayoutPanel
+            TableLayoutPanel layout = new TableLayoutPanel
             {
-                ColumnCount = 3,
-                RowCount = 1,
-                Dock = DockStyle.Fill,
+                ColumnCount = 2, RowCount = 2, Dock = DockStyle.Fill,
                 Padding = new Padding(0, 0, 0, 10)
             };
-            tlp.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
-            tlp.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
-            tlp.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 78));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.Controls.Add(CreateStatCard("등록된 공유 공간", "5 개", Color.FromArgb(15, 23, 42), out _lblTotalSpace), 0, 0);
+            layout.Controls.Add(CreateStatCard("찜한 공유 공간", "0 개", Color.FromArgb(225, 29, 72), out _lblWishlist), 1, 0);
 
-            Panel card1 = CreateStatCard("등록된 전체 공간", "5 개", Color.FromArgb(15, 23, 42), out _lblTotalSpace);
-            Panel card2 = CreateStatCard("내 찜한 공간", "0 개", Color.FromArgb(225, 29, 72), out _lblWishlist);
-            Panel card3 = CreateStatCard("내 누적 예약 건수", "0 건", Color.FromArgb(37, 99, 235), out _lblReservationCount);
+            Panel totalCard = new Panel
+            {
+                Dock = DockStyle.Fill, Margin = new Padding(4),
+                BorderStyle = BorderStyle.FixedSingle, Padding = new Padding(16, 4, 16, 4)
+            };
+            _lblReservationCount = new Label
+            {
+                Text = "0 건", Dock = DockStyle.Right, Width = 240,
+                Font = new Font("맑은 고딕", 40F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(37, 99, 235), TextAlign = ContentAlignment.MiddleRight
+            };
+            Label title = new Label
+            {
+                Text = "누적 예약 건수", Location = new Point(16, 12), AutoSize = true,
+                Font = new Font("맑은 고딕", 13F, FontStyle.Bold)
+            };
+            _lblActiveReservationCount = new Label
+            {
+                Text = "현재 예약 0건 · 이번 실행 중 완료한 예약 합계", Location = new Point(16, 48),
+                AutoSize = true, Font = new Font("맑은 고딕", 9F)
+            };
+            totalCard.Controls.Add(title);
+            totalCard.Controls.Add(_lblActiveReservationCount);
+            totalCard.Controls.Add(_lblReservationCount);
+            layout.Controls.Add(totalCard, 0, 1);
+            layout.SetColumnSpan(totalCard, 2);
+            return layout;
+        }
 
-            tlp.Controls.Add(card1, 0, 0);
-            tlp.Controls.Add(card2, 1, 0);
-            tlp.Controls.Add(card3, 2, 0);
+        private void UpdateReservationSummary()
+        {
+            _lblReservationCount.Text = $"{_totalReservationCount:N0} 건";
+            _lblActiveReservationCount.Text = $"현재 예약 {_reservations.Count:N0}건 · 이번 실행 중 완료한 예약 합계";
+        }
 
-            return tlp;
+        private bool AddReservation(ReservationModel reservation)
+        {
+            var space = _spaces.FirstOrDefault(item => item.Id == reservation.SpaceId);
+            if (space == null || reservation.Hours.Count == 0 ||
+                reservation.Hours.Any(hour => space.ReservedHours.Contains(hour))) return false;
+            _reservations.Add(reservation);
+            space.ReservedHours.AddRange(reservation.Hours);
+            _totalReservationCount++;
+            UpdateReservationSummary();
+            return true;
+        }
+
+        private void CancelReservationAt(int index)
+        {
+            var reservation = _reservations[index];
+            var space = _spaces.FirstOrDefault(item => item.Id == reservation.SpaceId);
+            if (space != null)
+                foreach (var hour in reservation.Hours) space.ReservedHours.Remove(hour);
+            _reservations.RemoveAt(index);
+            UpdateReservationSummary();
         }
 
         private Panel CreateStatCard(string title, string defaultVal, Color valColor, out Label valueLabel)
@@ -370,7 +419,7 @@ namespace WinFormsApp1
             Button btnAll = new Button { Text = "전체", Width = 55, Height = 30, FlatStyle = FlatStyle.Flat, Tag = "All", Cursor = Cursors.Hand };
             Button btnOff = new Button { Text = "🏢 오피스", Width = 80, Height = 30, FlatStyle = FlatStyle.Flat, Tag = "Office", Cursor = Cursors.Hand };
             Button btnMeet = new Button { Text = "🤝 회의실", Width = 80, Height = 30, FlatStyle = FlatStyle.Flat, Tag = "Meeting", Cursor = Cursors.Hand };
-            Button btnKit = new Button { Text = "🍳 공유주방", Width = 95, Height = 30, FlatStyle = FlatStyle.Flat, Tag = "Kitchen", Cursor = Cursors.Hand };
+            Button btnKit = new Button { Text = "🍳 공유 주방", Width = 95, Height = 30, FlatStyle = FlatStyle.Flat, Tag = "Kitchen", Cursor = Cursors.Hand };
 
             btnAll.Click += CategoryFilter_Click;
             btnOff.Click += CategoryFilter_Click;
@@ -412,8 +461,8 @@ namespace WinFormsApp1
             Panel p = new Panel { Padding = new Padding(10), BorderStyle = BorderStyle.FixedSingle };
 
             // 헤더 영역
-            Label header = new Label { Text = "공간 예약 대시보드", Font = new Font("맑은 고딕", 11, FontStyle.Bold), Dock = DockStyle.Top, Height = 25 };
-            _lblSelectedTitle = new Label { Text = "공간을 선택해주세요", Font = new Font("맑은 고딕", 10F, FontStyle.Bold), ForeColor = Color.FromArgb(37, 99, 235), Dock = DockStyle.Top, Height = 22 };
+            Label header = new Label { Text = "공유 공간 예약", Font = new Font("맑은 고딕", 11, FontStyle.Bold), Dock = DockStyle.Top, Height = 25 };
+            _lblSelectedTitle = new Label { Text = "공유 공간을 선택해주세요", Font = new Font("맑은 고딕", 10F, FontStyle.Bold), ForeColor = Color.FromArgb(37, 99, 235), Dock = DockStyle.Top, Height = 22 };
             _lblSelectedPrice = new Label { Text = "0원 / 시간", Font = new Font("맑은 고딕", 9F), Dock = DockStyle.Top, Height = 20 };
 
             // 사용자 정보
@@ -527,7 +576,7 @@ namespace WinFormsApp1
 
             _gridHistory.Columns.Add("UserName", "예약자");
             _gridHistory.Columns.Add("UserPhone", "연락처");
-            _gridHistory.Columns.Add("SpaceTitle", "공간명");
+            _gridHistory.Columns.Add("SpaceTitle", "공유 공간명");
             _gridHistory.Columns.Add("DateText", "예약 날짜");
             _gridHistory.Columns.Add("TimeText", "이용 시간");
             _gridHistory.Columns.Add("PaymentMethod", "결제 수단");
@@ -565,7 +614,7 @@ namespace WinFormsApp1
             };
 
             Label title = new Label { Text = "💳 SPACE HUB 안전 결제", Font = new Font("맑은 고딕", 11.5F, FontStyle.Bold), Location = new Point(20, 20), AutoSize = true };
-            _lblModalTitle = new Label { Text = "공간명", Location = new Point(20, 55), AutoSize = true, Font = new Font("맑은 고딕", 9.5F, FontStyle.Bold) };
+            _lblModalTitle = new Label { Text = "공유 공간명", Location = new Point(20, 55), AutoSize = true, Font = new Font("맑은 고딕", 9.5F, FontStyle.Bold) };
             _lblModalTime = new Label { Text = "날짜 및 시간", Location = new Point(20, 80), AutoSize = true, ForeColor = Color.Gray };
             _lblModalPrice = new Label { Text = "최종 금액: 0원", Location = new Point(20, 105), AutoSize = true, Font = new Font("맑은 고딕", 10.5F, FontStyle.Bold), ForeColor = Color.FromArgb(225, 29, 72) };
 
@@ -753,7 +802,7 @@ namespace WinFormsApp1
             {
                 Label lblNotice = new Label
                 {
-                    Text = "👈 왼쪽에서 원하시는 공간을\n   클릭하면 이용 시간대가 표시됩니다.",
+                    Text = "👈 왼쪽에서 원하시는 공유 공간을\n   클릭하면 이용 시간대가 표시됩니다.",
                     Font = new Font("맑은 고딕", 9F, FontStyle.Bold),
                     ForeColor = Color.FromArgb(100, 116, 139),
                     AutoSize = false,
@@ -794,7 +843,7 @@ namespace WinFormsApp1
                 }
                 else
                 {
-                    chip.BackColor = _bgInput;
+                    chip.BackColor = _isDarkMode ? _bgInput : Color.White;
                     chip.ForeColor = _textMain;
                 }
 
@@ -849,7 +898,7 @@ namespace WinFormsApp1
         {
             if (_selectedSpace == null)
             {
-                MessageBox.Show("대여할 공간을 먼저 선택해주세요.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("예약할 공유 공간을 먼저 선택해주세요.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (_selectedHours.Count == 0)
@@ -884,15 +933,17 @@ namespace WinFormsApp1
                 Hours = new List<int>(_selectedHours)
             };
 
-            _reservations.Add(res);
-            _selectedSpace.ReservedHours.AddRange(_selectedHours);
+            if (!AddReservation(res))
+            {
+                MessageBox.Show("이미 예약된 시간은 재선택할 수 없습니다.", "예약 확인", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
 
-            MessageBox.Show("결제 및 공간 예약이 성공적으로 완료되었습니다!", "예약 성공", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("공유 공간 예약이 완료되었습니다!", "예약 성공", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             _paymentModalOverlay.Visible = false;
             _selectedHours.Clear();
 
-            _lblReservationCount.Text = $"{_reservations.Count} 건";
 
             RenderTimeChips();
             UpdateTotalPrice();
@@ -912,16 +963,7 @@ namespace WinFormsApp1
         {
             if (e.RowIndex >= 0 && e.ColumnIndex == 7)
             {
-                var res = _reservations[e.RowIndex];
-                var space = _spaces.FirstOrDefault(s => s.Id == res.SpaceId);
-
-                if (space != null)
-                {
-                    foreach (var h in res.Hours) space.ReservedHours.Remove(h);
-                }
-
-                _reservations.RemoveAt(e.RowIndex);
-                _lblReservationCount.Text = $"{_reservations.Count} 건";
+                CancelReservationAt(e.RowIndex);
 
                 RefreshHistoryGrid();
                 RenderTimeChips();
