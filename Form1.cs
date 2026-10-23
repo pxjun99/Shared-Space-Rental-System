@@ -53,7 +53,6 @@ namespace WinFormsApp1
         private List<SpaceModel> _spaces = new List<SpaceModel>();
         private List<ReservationModel> _reservations = new List<ReservationModel>();
         private int _totalReservationCount;
-        private Label _lblActiveReservationCount;
         private SpaceModel _selectedSpace = null;
         private List<int> _selectedHours = new List<int>();
         private bool _isDarkMode = false;
@@ -158,7 +157,7 @@ namespace WinFormsApp1
             // 상단 수치 요약 위젯
             Panel statsPanel = BuildStatsWidget();
             statsPanel.Dock = DockStyle.Top;
-            statsPanel.Height = 190;
+            statsPanel.Height = 110;
 
             // 중앙 작업 영역
             Panel centerContainer = new Panel { Dock = DockStyle.Fill };
@@ -294,51 +293,31 @@ namespace WinFormsApp1
 
         private Panel BuildStatsWidget()
         {
-            TableLayoutPanel layout = new TableLayoutPanel
+            TableLayoutPanel tlp = new TableLayoutPanel
             {
-                ColumnCount = 2, RowCount = 2, Dock = DockStyle.Fill,
+                ColumnCount = 3,
+                RowCount = 1,
+                Dock = DockStyle.Fill,
                 Padding = new Padding(0, 0, 0, 10)
             };
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 78));
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            layout.Controls.Add(CreateStatCard("등록된 공유 공간", "5 개", Color.FromArgb(15, 23, 42), out _lblTotalSpace), 0, 0);
-            layout.Controls.Add(CreateStatCard("찜한 공유 공간", "0 개", Color.FromArgb(225, 29, 72), out _lblWishlist), 1, 0);
+            tlp.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            tlp.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            tlp.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
 
-            Panel totalCard = new Panel
-            {
-                Dock = DockStyle.Fill, Margin = new Padding(4),
-                BorderStyle = BorderStyle.FixedSingle, Padding = new Padding(16, 4, 16, 4)
-            };
-            _lblReservationCount = new Label
-            {
-                Text = "0 건", Dock = DockStyle.Right, Width = 240,
-                Font = new Font("맑은 고딕", 40F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(37, 99, 235), TextAlign = ContentAlignment.MiddleRight
-            };
-            Label title = new Label
-            {
-                Text = "누적 예약 건수", Location = new Point(16, 12), AutoSize = true,
-                Font = new Font("맑은 고딕", 13F, FontStyle.Bold)
-            };
-            _lblActiveReservationCount = new Label
-            {
-                Text = "현재 예약 0건 · 이번 실행 중 완료한 예약 합계", Location = new Point(16, 48),
-                AutoSize = true, Font = new Font("맑은 고딕", 9F)
-            };
-            totalCard.Controls.Add(title);
-            totalCard.Controls.Add(_lblActiveReservationCount);
-            totalCard.Controls.Add(_lblReservationCount);
-            layout.Controls.Add(totalCard, 0, 1);
-            layout.SetColumnSpan(totalCard, 2);
-            return layout;
+            Panel card1 = CreateStatCard("등록된 공유 공간", "5 개", Color.FromArgb(15, 23, 42), out _lblTotalSpace);
+            Panel card2 = CreateStatCard("찜한 공유 공간", "0 개", Color.FromArgb(225, 29, 72), out _lblWishlist);
+            Panel card3 = CreateStatCard("내 누적 예약 건수", "0 건", Color.FromArgb(37, 99, 235), out _lblReservationCount);
+
+            tlp.Controls.Add(card1, 0, 0);
+            tlp.Controls.Add(card2, 1, 0);
+            tlp.Controls.Add(card3, 2, 0);
+
+            return tlp;
         }
 
         private void UpdateReservationSummary()
         {
             _lblReservationCount.Text = $"{_totalReservationCount:N0} 건";
-            _lblActiveReservationCount.Text = $"현재 예약 {_reservations.Count:N0}건 · 이번 실행 중 완료한 예약 합계";
         }
 
         private bool AddReservation(ReservationModel reservation)
